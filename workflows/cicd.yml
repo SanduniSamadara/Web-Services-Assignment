@@ -1,0 +1,39 @@
+name: CICD
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # Corrected runner
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4 # Corrected action name
+      - name: Setup Java
+        uses: actions/setup-java@v4 # Corrected action name
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Build Project
+        run: mvn clean install -DskipTests # Fixed typo: skipTests
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }} # Fixed secrets typo
+      - name: Build Docker image
+        run: docker build -t sewminidocker/coinsbase_cripto .
+      - name: Publish image to Docker Hub
+        run: docker push sewminidocker/coinsbase_cripto:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest # Using Ubuntu runner for deployment
+    steps:
+      - name: Pull image from Docker Hub
+        run: sudo docker pull sewminidocker/coinsbase_cripto:latest
+      - name: Stop and remove old container (if exists)
+        run: |
+          if [ $(docker ps -q -f name=coinbase-crypto-container) ]; then
+            sudo docker stop coinbase-crypto-container && docker rm coinbase-crypto-container;
+          fi
+      - name: Run Docker container
+        run: sudo docker run -d -p 8080:8080 --name coinbase-crypto-container sewminidocker/coinsbase_cripto

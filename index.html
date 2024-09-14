@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <title>Currency Exchange</title>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table,
+    th,
+    td {
+      border: 1px solid black;
+    }
+
+    th,
+    td {
+      padding: 8px;
+      text-align: left;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container mt-4">
+    <h1 class="text-center">Currency Exchange</h1>
+
+    <!-- Form for currency selection and amount input -->
+    <div class="container">
+      <div class="card">
+        <div class="card-body">
+          <form>
+            <div class="form-group">
+              <label for="fromCurrency">From Currency:</label>
+              <select class="form-control" id="toCurrency"></select>
+
+            </div>
+
+            <div class="form-group">
+              <label for="toCurrency">To Currency:</label>
+              <select class="form-control" id="fromCurrency"></select>
+            </div>
+
+            <div class="form-group">
+              <label for="amount">Amount:</label>
+              <input type="text" class="form-control" id="amount">
+            </div>
+
+            <!-- Real-time calculated price -->
+            <h3 id="calculatedPrice">Converted Price: </h3>
+
+            <!-- Button to trigger calculation -->
+            <button type="button" class="btn btn-primary" onclick="autoCalculatePrice()">Calculate</button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Table to display real-time prices -->
+    <h2 class="mt-4">Real-Time Prices</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody id="currencyTable"></tbody>
+    </table>
+
+
+  </div>
+
+  <!-- JavaScript and Bootstrap JS -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+
+
+    // Automatically calculate price when button is clicked
+    function autoCalculatePrice() {
+      console.log("awaaaaaaaaaaaaaa");
+      const fromCurrency = document.getElementById('fromCurrency').value;
+      const toCurrency = document.getElementById('toCurrency').value;
+      const amount = document.getElementById('amount').value;
+
+      if (fromCurrency && toCurrency && amount) {
+        fetch('http://localhost:8094/api/currencies/all')
+          .then(response => response.json())
+          .then(data => {
+            const fromRate = data.find(currency => currency.code === fromCurrency)?.price;
+            const toRate = data.find(currency => currency.code === toCurrency)?.price;
+
+            if (fromRate && toRate) {
+              const convertedPrice = (amount / fromRate) * toRate;
+              document.getElementById('calculatedPrice').textContent = Converted Price: ${convertedPrice.toFixed(2)};
+            } else {
+              document.getElementById('calculatedPrice').textContent = 'Rate not found for selected currencies.';
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching currency data:', error);
+            document.getElementById('calculatedPrice').textContent = 'Error fetching currency data.';
+          });
+      } else {
+        document.getElementById('calculatedPrice').textContent = 'Please fill all fields.';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+      fetchCurrencies();
+
+      // Fetch currency data from backend
+      function fetchCurrencies() {
+        fetch('http://localhost:8094/api/currencies/all')
+          .then(response => response.json())
+          .then(data => {
+            populateDropdowns(data);
+            populateTable(data);
+          });
+      }
+
+      // Populate From and To dropdowns with CODES
+      function populateDropdowns(data) {
+        const fromSelect = document.getElementById('fromCurrency');
+        const toSelect = document.getElementById('toCurrency');
+        fromSelect.innerHTML = '';  // Clear the dropdown before populating
+        toSelect.innerHTML = '';    // Clear the dropdown before populating
+
+        data.forEach(currency => {
+          // Create an option for the 'From' dropdown
+          const optionFrom = document.createElement('option');
+          optionFrom.value = currency.code; // Use the 'code' for value
+          optionFrom.textContent = currency.code; // Display the 'code' in the dropdown
+          fromSelect.appendChild(optionFrom);  // Add the option to the 'From' dropdown
+
+          // Create an option for the 'To' dropdown
+          const optionTo = document.createElement('option');
+          optionTo.value = currency.code; // Use the 'code' for value
+          optionTo.textContent = currency.code; // Display the 'code' in the dropdown
+          toSelect.appendChild(optionTo);  // Add the option to the 'To' dropdown
+        });
+      }
+
+      // Populate table with real-time prices
+      function populateTable(data) {
+        const tableBody = document.getElementById('currencyTable');
+        tableBody.innerHTML = '';  // Clear table
+        data.forEach(currency => {
+          const row = `<tr>
+                    <td>${currency.code}</td>
+                    <td>${currency.name}</td>
+                    <td>${currency.price}</td>
+                </tr>`;
+          tableBody.innerHTML += row;
+        });
+      }
+
+
+    });
+  </script>
+
+</body>
+
+</html>
